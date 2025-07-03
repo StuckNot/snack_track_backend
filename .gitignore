@@ -1,0 +1,64 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
+.env
+.env.*
+
+# Pyenv
+.python-version
+
+# SQLite DB and test databases (if any)
+*.sqlite3
+*.db
+*.sqlite
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
+*.pid
+
+# MacOS and system files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+.nox/
+coverage.xml
+.cache
+
+# Pytest
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# Pydantic compiled schemas
+__pydantic__/
+
+# Uvicorn reload artifact
+*.reload
+
+# Bandit security tool reports
+bandit.json
+
+# IDEs
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# Jupyter Notebooks (if ever used)
+.ipynb_checkpoints/
