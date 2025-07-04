@@ -7,7 +7,7 @@ from app.middleware.request_logger import RequestLoggingMiddleware
 
 # Initialize logging configuration
 setup_logging()
-#print test
+
 
 app = FastAPI(title=settings.APP_NAME, version=settings.version)
 
@@ -22,4 +22,6 @@ app.include_router(profile_router, prefix="/api/v1")
 @app.get("/")
 def root():
     return {"message": "Food Health Impact API running"}
+
+print(f"API is running at {settings.API_URL}")
 
