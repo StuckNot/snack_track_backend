@@ -48,6 +48,9 @@ module.exports = (sequelize, DataTypes) => {
       if (!hasNumbers) {
         throw new Error('Password must contain at least one number');
       }
+      if (!hasNonalphas) {
+        throw new Error('Password must contain at least one special character');
+      }
       
       return true;
     }
@@ -391,6 +394,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     last_login: {
       type: DataTypes.DATE
+    },
+    role: {
+      type: DataTypes.ENUM('user', 'admin'),
+      defaultValue: 'user',
+      comment: 'User role for access control'
     }
   }, {
     sequelize,
@@ -456,9 +464,6 @@ module.exports = (sequelize, DataTypes) => {
         if (user.changed('email')) {
           user.email = user.email.toLowerCase().trim();
         }
-
-        // 5. Update timestamp
-        user.updated_at = new Date();
       },
 
       afterCreate: async (user) => {

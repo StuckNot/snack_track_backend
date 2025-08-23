@@ -234,31 +234,41 @@ class UserService {
     try {
       const { health_goal, dietary_preference, allergy, limit = 10, offset = 0 } = filters;
       
-      let users;
+      // Build dynamic WHERE clause with all filters applied at database level
+      const whereClause = { is_active: true };
       
+      // Add health goal filter
       if (health_goal) {
-        users = await User.findByHealthGoal(health_goal);
-      } else if (allergy) {
-        users = await User.findUsersWithAllergy(allergy);
-      } else {
-        users = await User.findActiveUsers();
+        whereClause.health_goals = health_goal;
       }
-
-      // Apply additional filters
-      let filteredUsers = users;
       
+      // Add dietary preference filter
       if (dietary_preference) {
-        filteredUsers = users.filter(user => user.dietary_preferences === dietary_preference);
+        whereClause.dietary_preferences = dietary_preference;
+      }
+      
+      // Add allergy filter using array containment
+      if (allergy) {
+        whereClause.allergies = {
+          [User.sequelize.Op.contains]: [allergy.toLowerCase()]
+        };
       }
 
-      // Apply pagination
-      const paginatedUsers = filteredUsers.slice(offset, offset + limit);
+      // Execute single optimized query with all filters
+      const { count, rows } = await User.findAndCountAll({
+        where: whereClause,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['created_at', 'DESC']], // Most recent users first
+        attributes: { exclude: ['password'] } // Security: never return password
+      });
       
       return {
-        users: paginatedUsers.map(user => user.toPublicObject()),
-        total: filteredUsers.length,
-        limit,
-        offset
+        users: rows.map(user => user.toPublicObject()),
+        total: count,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        hasMore: (parseInt(offset) + parseInt(limit)) < count
       };
     } catch (error) {
       throw new Error(`Failed to search users: ${error.message}`);
@@ -277,7 +287,7 @@ class UserService {
           totalUsers: stats.total,
           activeUsers: stats.active,
           verifiedUsers: stats.verified,
-          verificationRate: ((stats.verified / stats.total) * 100).toFixed(2) + '%'
+          verificationRate: stats.total > 0 ? ((stats.verified / stats.total) * 100).toFixed(2) + '%' : '0.00%'
         },
         demographics: {
           gender: stats.genderDistribution,

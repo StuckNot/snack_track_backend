@@ -26,7 +26,7 @@ app.use(helmet({
  */
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
+    ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [])
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -114,11 +114,39 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // JWT errors
-  if (error.name === 'JsonWebTokenError') {
-    return res.status(401).json({
+  // Sequelize validation errors
+  if (error.name === 'SequelizeValidationError') {
+    return res.status(400).json({
       success: false,
-      message: 'Invalid token'
+      message: 'Validation error',
+      errors: error.errors.map(err => err.message)
+    });
+  }
+
+  // Sequelize unique constraint errors
+  if (error.name === 'SequelizeUniqueConstraintError') {
+    return res.status(409).json({
+      success: false,
+      message: 'Duplicate entry',
+      errors: error.errors.map(err => `${err.path} already exists`)
+    });
+  }
+
+  // Sequelize foreign key constraint errors
+  if (error.name === 'SequelizeForeignKeyConstraintError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid reference',
+      error: 'The referenced record does not exist'
+    });
+  }
+
+  // Sequelize database connection errors
+  if (error.name === 'SequelizeConnectionError') {
+    return res.status(503).json({
+      success: false,
+      message: 'Database connection error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Service temporarily unavailable'
     });
   }
 

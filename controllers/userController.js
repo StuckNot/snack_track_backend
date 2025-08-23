@@ -1,5 +1,6 @@
 const userService = require('../services/userService');
 const { validationResult } = require('express-validator');
+const { User } = require('../models'); // Add User model import
 
 class UserController {
   /**
@@ -213,16 +214,23 @@ class UserController {
       const userId = req.user.userId;
       const { ingredients } = req.body;
       
-      const user = await userService.getUserProfile(userId);
+      // Fetch full User model instance instead of plain object
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
       
-      // Check allergy compatibility
+      // Now we can safely call model instance methods
       const allergyCheck = ingredients.map(ingredient => ({
         ingredient,
-        hasAllergy: user.hasAllergy ? user.hasAllergy(ingredient) : false
+        hasAllergy: user.hasAllergy(ingredient)
       }));
       
       // Check dietary compatibility
-      const dietaryCompatible = user.isCompatibleWith ? user.isCompatibleWith(ingredients) : true;
+      const dietaryCompatible = user.isCompatibleWith(ingredients);
       
       res.status(200).json({
         success: true,
@@ -231,7 +239,7 @@ class UserController {
           allergyChecks: allergyCheck,
           dietaryCompatible,
           overallCompatible: !allergyCheck.some(check => check.hasAllergy) && dietaryCompatible,
-          dietaryRestrictions: user.dietaryRestrictions || []
+          dietaryRestrictions: user.getDietaryRestrictions()
         }
       });
     } catch (error) {
@@ -248,14 +256,23 @@ class UserController {
   async getHealthMetrics(req, res) {
     try {
       const userId = req.user.userId;
-      const user = await userService.getUserProfile(userId);
       
+      // Fetch full User model instance instead of plain object
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      // Now we can safely call model instance methods
       const metrics = {
-        bmi: user.BMI || user.calculateBMI?.(),
-        bmiCategory: user.bmiCategory || user.getBMICategory?.(),
-        dailyCalories: user.dailyCalories || user.calculateDailyCalories?.(),
-        idealWeightRange: user.idealWeightRange || user.getIdealWeightRange?.(),
-        calculatedAge: user.calculatedAge || user.calculateAge?.()
+        bmi: user.BMI || user.calculateBMI(),
+        bmiCategory: user.getBMICategory(),
+        dailyCalories: user.calculateDailyCalories(),
+        idealWeightRange: user.getIdealWeightRange(),
+        calculatedAge: user.calculateAge()
       };
       
       res.status(200).json({

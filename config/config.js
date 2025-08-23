@@ -2,9 +2,9 @@ require('dotenv').config();
 
 module.exports = {
   development: {
-    username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'your_password_here',
-    database: process.env.DB_NAME || 'snacktrack_dev',
+    username: process.env.DB_USERNAME || null,
+    password: process.env.DB_PASSWORD || null,
+    database: process.env.DB_NAME || null,
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
@@ -22,9 +22,9 @@ module.exports = {
     }
   },
   test: {
-    username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'your_password_here',
-    database: `${process.env.DB_NAME}_test` || 'snacktrack_test',
+    username: process.env.DB_USERNAME || null,
+    password: process.env.DB_PASSWORD || null,
+    database: process.env.DB_NAME ? `${process.env.DB_NAME}_test` : 'snacktrack_test',
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
@@ -44,10 +44,14 @@ module.exports = {
     dialect: 'postgres',
     logging: false, // No SQL queries in production
     dialectOptions: {
-      ssl: {
+      ssl: process.env.NODE_ENV === 'production' ? {
         require: true,
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: true, // FIXED: Enable certificate validation for security
+        // If using a custom CA certificate, add it here:
+        // ca: process.env.DB_SSL_CA, // Base64 encoded CA certificate
+        // cert: process.env.DB_SSL_CERT, // Client certificate if required
+        // key: process.env.DB_SSL_KEY, // Client key if required
+      } : false // No SSL in non-production environments
     },
     define: {
       timestamps: true,

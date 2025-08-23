@@ -17,53 +17,149 @@ SnackTrack is a comprehensive backend system that allows users to scan product b
 
 ```
 snack_track_backend/
-├── app/                    # Core application files
-│   ├── models/            # Database models
-│   ├── middleware/        # Custom middleware
-│   └── enums/             # Enumerations
-├── controllers/           # Business logic controllers
-├── services/             # Business logic services
+├── app/                   # Legacy application files (being phased out)
+├── config/               # Database and application configuration
+├── controllers/          # Request handlers and business logic
+├── middlewares/          # Custom middleware (auth, upload, etc.)
+├── migrations/           # Database migration files
+├── models/               # Sequelize database models
 ├── routes/               # API route definitions
-├── utils/                # Utility functions
+├── seeders/              # Database seed files
+├── services/             # Business logic services
 ├── tests/                # Test files
 ├── uploads/              # File upload directory
-└── config/               # Configuration files
+├── utils/                # Utility functions
+├── app.js                # Express application setup
+├── server.js             # Server entry point
+└── package.json          # Dependencies and scripts
 ```
 
 ## 🛠️ Technology Stack
 
+### Backend Core
 - **Node.js** - Runtime environment
 - **Express.js** - Web framework
 - **PostgreSQL** - Database
-- **Sequelize** - ORM
+- **Sequelize** - ORM (Object-Relational Mapping)
+
+### Authentication & Security
 - **bcryptjs** - Password hashing
-- **JWT** - Authentication
-- **Multer** - File uploads
-- **Tesseract.js** - OCR processing
-- **QuaggaJS** - Barcode scanning
+- **JWT (jsonwebtoken)** - Authentication tokens
+- **express-validator** - Input validation
+
+### File Handling
+- **Multer** - File upload middleware
+
+### Development & Utilities
+- **dotenv** - Environment variable management
+- **cors** - Cross-Origin Resource Sharing
+
+*Note: Tesseract.js and QuaggaJS are client-side libraries that would be integrated in the frontend application, not this backend API.*
 
 ## 📦 Installation
 
-1. Install dependencies:
+1. **Clone the repository:**
+```bash
+git clone <repository-url>
+cd snack_track_backend
+```
+
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-2. Set up environment variables:
-- Copy `.env.example` to `.env`
-- Update database credentials and API keys
+3. **Set up environment variables:**
+```bash
+# Copy the example environment file
+cp .env.example .env
 
-3. Set up database:
+# Edit .env with your actual values
+# IMPORTANT: Never commit .env to version control
+```
+
+4. **Configure database credentials:**
+- Install PostgreSQL: https://postgresapp.com/ (macOS) or https://www.postgresql.org/download/
+- Update `DB_*` variables in `.env` with your PostgreSQL credentials
+- Generate a secure JWT secret: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+
+5. **Set up database:**
 ```bash
 npm run db:create
 npm run db:migrate
 npm run db:seed
 ```
 
-4. Start development server:
+6. **Start development server:**
 ```bash
 npm run dev
 ```
+
+## 🔐 Security Configuration
+
+### Environment Variables
+- **All sensitive data** must be configured via environment variables
+- **No default credentials** are provided - you must set up your own
+- Use the `.env.example` file as a template
+- **Never commit** your `.env` file to version control
+
+### Database Setup
+- Use strong, unique passwords for database access
+- Configure separate databases for development, test, and production
+- Enable SSL in production environments
+
+## 🌐 CORS Configuration
+
+SnackTrack uses environment-variable-driven CORS configuration for maximum deployment flexibility.
+
+### Development
+In development, CORS automatically allows:
+- `http://localhost:3000` (React default)
+- `http://localhost:3001` (Alternative frontend port)
+
+No configuration needed - just start the server.
+
+### Production Environments
+
+Set the `CORS_ORIGIN` environment variable with comma-separated allowed origins:
+
+**Single Domain:**
+```bash
+CORS_ORIGIN=https://snacktrack.com
+```
+
+**Multiple Domains:**
+```bash
+CORS_ORIGIN=https://snacktrack.com,https://app.snacktrack.com,https://api.snacktrack.com
+```
+
+**Staging + Production:**
+```bash
+CORS_ORIGIN=https://staging.snacktrack.com,https://snacktrack.com
+```
+
+### Deployment Examples
+
+**Heroku:**
+```bash
+heroku config:set CORS_ORIGIN=https://yourapp.herokuapp.com
+```
+
+**Vercel:**
+```bash
+vercel env add CORS_ORIGIN production
+# Enter: https://yourapp.vercel.app
+```
+
+**Docker:**
+```bash
+docker run -e CORS_ORIGIN=https://yourapp.com snacktrack-backend
+```
+
+**AWS/GCP/Azure:**
+Add `CORS_ORIGIN` to your environment variables in the respective console.
+
+---
 
 ## 🎯 API Endpoints
 
