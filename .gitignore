@@ -62,3 +62,4 @@ bandit.json
 
 # Jupyter Notebooks (if ever used)
 .ipynb_checkpoints/
+node_modules
