@@ -17,7 +17,9 @@ router.post('/register', [
   body('name')
     .trim()
     .isLength({ min: 2, max: 100 })
-    .withMessage('Name must be between 2 and 100 characters'),
+    .withMessage('Name must be between 2 and 100 characters')
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
   body('email')
     .isEmail()
     .normalizeEmail()
@@ -25,7 +27,7 @@ router.post('/register', [
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   body('age')
     .optional()
@@ -86,7 +88,9 @@ router.put('/profile', [
     .optional()
     .trim()
     .isLength({ min: 2, max: 100 })
-    .withMessage('Name must be between 2 and 100 characters'),
+    .withMessage('Name must be between 2 and 100 characters')
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
   body('age')
     .optional()
     .isInt({ min: 13, max: 120 })
@@ -134,7 +138,7 @@ router.post('/change-password', [
   body('newPassword')
     .isLength({ min: 8 })
     .withMessage('New password must be at least 8 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$/)
     .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
 ], userController.changePassword);
 
