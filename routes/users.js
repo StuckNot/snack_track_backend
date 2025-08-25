@@ -12,7 +12,105 @@ const upload = require('../middlewares/upload');
  * 🔐 AUTHENTICATION ROUTES
  */
 
-// POST /api/users/register
+/**
+ * @swagger
+ * /api/users/register:
+ *   post:
+ *     summary: Register a new user
+ *     description: Create a new user account with email and password
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: "John Doe"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *                 pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*\\W).{8,}$"
+ *                 example: "SecurePass123!"
+ *               age:
+ *                 type: integer
+ *                 minimum: 13
+ *                 maximum: 120
+ *                 example: 25
+ *               height:
+ *                 type: number
+ *                 minimum: 50
+ *                 maximum: 300
+ *                 example: 175
+ *               weight:
+ *                 type: number
+ *                 minimum: 20
+ *                 maximum: 500
+ *                 example: 70
+ *               gender:
+ *                 type: string
+ *                 enum: [Male, Female, Other]
+ *                 example: "Male"
+ *               dietary_preferences:
+ *                 type: string
+ *                 enum: [veg, vegan, keto, paleo, gluten_free, dairy_free, none]
+ *                 example: "veg"
+ *               health_goals:
+ *                 type: string
+ *                 enum: [lose_weight, gain_muscle, maintain, improve_health]
+ *                 example: "lose_weight"
+ *               activity_level:
+ *                 type: string
+ *                 enum: [sedentary, light, moderate, active, very_active]
+ *                 example: "moderate"
+ *               allergies:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["nuts", "dairy"]
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         token:
+ *                           type: string
+ *                           description: JWT authentication token
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/register', [
   body('name')
     .trim()
@@ -63,7 +161,61 @@ router.post('/register', [
     .withMessage('Allergies must be an array')
 ], userController.register);
 
-// POST /api/users/login
+/**
+ * @swagger
+ * /api/users/login:
+ *   post:
+ *     summary: Login user
+ *     description: Authenticate user with email and password
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *               password:
+ *                 type: string
+ *                 example: "SecurePass123!"
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         token:
+ *                           type: string
+ *                           description: JWT authentication token
+ *       400:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Authentication failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/login', [
   body('email')
     .isEmail()
@@ -78,10 +230,127 @@ router.post('/login', [
  * 👤 PROFILE MANAGEMENT ROUTES (Protected)
  */
 
-// GET /api/users/profile
+/**
+ * @swagger
+ * /api/users/profile:
+ *   get:
+ *     summary: Get user profile
+ *     description: Retrieve current user's profile information
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized access
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/profile', auth, userController.getProfile);
 
-// PUT /api/users/profile
+/**
+ * @swagger
+ * /api/users/profile:
+ *   put:
+ *     summary: Update user profile
+ *     description: Update current user's profile information
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: "John Smith"
+ *               age:
+ *                 type: integer
+ *                 minimum: 13
+ *                 maximum: 120
+ *                 example: 26
+ *               height:
+ *                 type: number
+ *                 minimum: 50
+ *                 maximum: 300
+ *                 example: 180
+ *               weight:
+ *                 type: number
+ *                 minimum: 20
+ *                 maximum: 500
+ *                 example: 75
+ *               gender:
+ *                 type: string
+ *                 enum: [Male, Female, Other]
+ *                 example: "Male"
+ *               dietary_preferences:
+ *                 type: string
+ *                 enum: [veg, vegan, keto, paleo, gluten_free, dairy_free, none]
+ *                 example: "keto"
+ *               health_goals:
+ *                 type: string
+ *                 enum: [lose_weight, gain_muscle, maintain, improve_health]
+ *                 example: "gain_muscle"
+ *               activity_level:
+ *                 type: string
+ *                 enum: [sedentary, light, moderate, active, very_active]
+ *                 example: "active"
+ *               allergies:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["shellfish"]
+ *               phone:
+ *                 type: string
+ *                 example: "+1234567890"
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized access
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.put('/profile', [
   auth,
   body('name')
@@ -129,8 +398,54 @@ router.put('/profile', [
     .withMessage('Please provide a valid phone number')
 ], userController.updateProfile);
 
-// POST /api/users/change-password
-router.post('/change-password', [
+/**
+ * @swagger
+ * /api/users/change-password:
+ *   put:
+ *     summary: Change user password
+ *     description: Change current user's password with current password verification
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: "OldPassword123!"
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*\\W).{8,}$"
+ *                 example: "NewSecurePass123!"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Invalid current password or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized access
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put('/change-password', [
   auth,
   body('currentPassword')
     .notEmpty()

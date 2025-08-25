@@ -8,18 +8,25 @@ module.exports = (sequelize, DataTypes) => {
      * 🔗 ASSOCIATIONS - Define relationships with other models
      */
     static associate(models) {
-      // User has many product assessments (will be uncommented when we create the model)
-      // User.hasMany(models.UserProductAssessment, {
-      //   foreignKey: 'user_id',
-      //   as: 'assessments'
-      // });
+      // User has many product assessments
+      User.hasMany(models.UserProductAssessment, {
+        foreignKey: 'user_id',
+        as: 'assessments'
+      });
 
-      // Future associations (when we build them)
-      // User.belongsToMany(models.Product, {
-      //   through: 'UserFavorites',
-      //   foreignKey: 'user_id',
-      //   as: 'favorites'
-      // });
+      // User has many favorites
+      User.hasMany(models.UserFavorite, {
+        foreignKey: 'user_id',
+        as: 'favorites'
+      });
+
+      // User can favorite many products (many-to-many through UserFavorite)
+      User.belongsToMany(models.Product, {
+        through: models.UserFavorite,
+        foreignKey: 'user_id',
+        otherKey: 'product_id',
+        as: 'favoriteProducts'
+      });
     }
 
     /**
@@ -179,6 +186,50 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
+     * 🏥 HEALTH CONDITIONS METHODS
+     */
+    hasHealthCondition(condition) {
+      if (!this.health_conditions || this.health_conditions.length === 0) return false;
+      return this.health_conditions.includes(condition.toLowerCase());
+    }
+
+    getDietaryRestrictionsForConditions() {
+      const restrictions = [];
+      
+      if (this.hasHealthCondition('diabetes')) {
+        restrictions.push('Limit sugar and refined carbs');
+      }
+      if (this.hasHealthCondition('hypertension')) {
+        restrictions.push('Limit sodium intake');
+      }
+      if (this.hasHealthCondition('heart_disease')) {
+        restrictions.push('Limit saturated fats and trans fats');
+      }
+      if (this.hasHealthCondition('kidney_disease')) {
+        restrictions.push('Limit protein and sodium');
+      }
+      
+      return restrictions;
+    }
+
+    getMedicationInteractions() {
+      const interactions = [];
+      
+      if (this.medications && this.medications.length > 0) {
+        // Common medication-food interactions
+        if (this.medications.includes('warfarin')) {
+          interactions.push('Limit vitamin K rich foods');
+        }
+        if (this.medications.includes('insulin')) {
+          interactions.push('Monitor carbohydrate intake');
+        }
+        // Add more medication interactions as needed
+      }
+      
+      return interactions;
+    }
+
+    /**
      * 🔒 DATA PRIVACY & SAFETY METHODS
      */
     toSafeObject() {
@@ -217,6 +268,81 @@ module.exports = (sequelize, DataTypes) => {
         activity_level: this.activity_level,
         dailyCalories: this.calculateDailyCalories()
       };
+    }
+
+    /**
+     * 🔐 SECURITY METHODS
+     */
+    isAccountLocked() {
+      return this.account_locked_until && new Date() < this.account_locked_until;
+    }
+
+    incrementFailedLoginAttempts() {
+      this.failed_login_attempts += 1;
+      
+      // Lock account after 5 failed attempts for 30 minutes
+      if (this.failed_login_attempts >= 5) {
+        this.account_locked_until = new Date(Date.now() + 30 * 60 * 1000);
+      }
+    }
+
+    resetFailedLoginAttempts() {
+      this.failed_login_attempts = 0;
+      this.account_locked_until = null;
+    }
+
+    generatePasswordResetToken() {
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      this.password_reset_token = token;
+      this.password_reset_expires = new Date(Date.now() + 3600000); // 1 hour
+      return token;
+    }
+
+    generateEmailVerificationToken() {
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      this.email_verification_token = token;
+      return token;
+    }
+
+    /**
+     * 📊 ENHANCED HEALTH METHODS
+     */
+    getEffectiveDailyCalories() {
+      return this.daily_calorie_goal || this.calculateDailyCalories();
+    }
+
+    getHealthRiskFactors() {
+      const risks = [];
+      
+      const bmi = this.calculateBMI();
+      if (bmi && bmi > 30) risks.push('Obesity');
+      if (bmi && bmi < 18.5) risks.push('Underweight');
+      
+      if (this.hasHealthCondition('diabetes')) risks.push('Diabetes');
+      if (this.hasHealthCondition('hypertension')) risks.push('High Blood Pressure');
+      if (this.hasHealthCondition('heart_disease')) risks.push('Heart Disease');
+      
+      return risks;
+    }
+
+    /**
+     * 🌐 LOCALIZATION METHODS
+     */
+    getLocalizedHealthProfile() {
+      const profile = this.toHealthProfile();
+      
+      // Add localization based on country/language
+      if (this.country === 'US') {
+        profile.heightUnit = 'feet/inches';
+        profile.weightUnit = 'lbs';
+      } else {
+        profile.heightUnit = 'cm';
+        profile.weightUnit = 'kg';
+      }
+      
+      return profile;
     }
 
     /**
@@ -356,6 +482,16 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: [],
       comment: 'Array of allergy strings ["nuts", "dairy"]'
     },
+    health_conditions: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+      comment: 'Array of health conditions ["diabetes", "hypertension", "heart_disease"]'
+    },
+    medications: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+      comment: 'Array of current medications that may affect dietary choices'
+    },
     dietary_preferences: {
       type: DataTypes.ENUM('veg', 'vegan', 'keto', 'paleo', 'gluten_free', 'dairy_free', 'none'),
       defaultValue: 'none'
@@ -367,6 +503,83 @@ module.exports = (sequelize, DataTypes) => {
     activity_level: {
       type: DataTypes.ENUM('sedentary', 'light', 'moderate', 'active', 'very_active'),
       defaultValue: 'moderate'
+    },
+
+    // User Preferences & Settings
+    notification_preferences: {
+      type: DataTypes.JSON,
+      defaultValue: {
+        email_notifications: true,
+        push_notifications: true,
+        weekly_reports: true,
+        allergy_alerts: true
+      },
+      comment: 'User notification preferences'
+    },
+    privacy_settings: {
+      type: DataTypes.JSON,
+      defaultValue: {
+        profile_visibility: 'private',
+        share_health_data: false,
+        allow_analytics: true
+      },
+      comment: 'User privacy preferences'
+    },
+    daily_calorie_goal: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 800,
+        max: 5000
+      },
+      comment: 'Custom daily calorie goal (overrides calculated value)'
+    },
+
+    // Security & Authentication
+    email_verification_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Token for email verification'
+    },
+    password_reset_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Token for password reset'
+    },
+    password_reset_expires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Expiration time for password reset token'
+    },
+    failed_login_attempts: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      comment: 'Track failed login attempts for security'
+    },
+    account_locked_until: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Account lock timestamp for security'
+    },
+    
+    // Enhanced Profile Fields
+    country: {
+      type: DataTypes.STRING(2),
+      allowNull: true,
+      validate: {
+        len: [2, 2]
+      },
+      comment: 'ISO country code for localization'
+    },
+    timezone: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: 'User timezone for proper scheduling'
+    },
+    language_preference: {
+      type: DataTypes.STRING(5),
+      defaultValue: 'en',
+      comment: 'User language preference (ISO 639-1)'
     },
 
     // Additional Fields
@@ -438,6 +651,30 @@ module.exports = (sequelize, DataTypes) => {
             allergy.toLowerCase().trim()
           );
         }
+
+        // 6. Normalize health conditions
+        if (user.health_conditions && Array.isArray(user.health_conditions)) {
+          user.health_conditions = user.health_conditions.map(condition => 
+            condition.toLowerCase().trim()
+          );
+        }
+
+        // 7. Normalize medications
+        if (user.medications && Array.isArray(user.medications)) {
+          user.medications = user.medications.map(medication => 
+            medication.toLowerCase().trim()
+          );
+        }
+
+        // 8. Generate email verification token
+        if (!user.email_verified) {
+          user.generateEmailVerificationToken();
+        }
+
+        // 9. Set default country if not provided (could be detected from IP)
+        if (!user.country) {
+          user.country = 'US'; // Default, could be determined by geolocation
+        }
       },
 
       beforeUpdate: async (user) => {
@@ -463,6 +700,27 @@ module.exports = (sequelize, DataTypes) => {
         // 4. Normalize email if changed
         if (user.changed('email')) {
           user.email = user.email.toLowerCase().trim();
+          user.email_verified = false; // Reset verification status
+          user.generateEmailVerificationToken();
+        }
+
+        // 5. Normalize health data if changed
+        if (user.changed('allergies') && user.allergies && Array.isArray(user.allergies)) {
+          user.allergies = user.allergies.map(allergy => 
+            allergy.toLowerCase().trim()
+          );
+        }
+
+        if (user.changed('health_conditions') && user.health_conditions && Array.isArray(user.health_conditions)) {
+          user.health_conditions = user.health_conditions.map(condition => 
+            condition.toLowerCase().trim()
+          );
+        }
+
+        if (user.changed('medications') && user.medications && Array.isArray(user.medications)) {
+          user.medications = user.medications.map(medication => 
+            medication.toLowerCase().trim()
+          );
         }
       },
 

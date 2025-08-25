@@ -186,17 +186,19 @@ class UserController {
   }
 
   /**
-   * 📊 ANALYTICS ENDPOINTS (Admin only)
+   * 📊 ANALYTICS ENDPOINTS (Admin only - Secured with adminAuth middleware)
    */
   async getAnalytics(req, res) {
     try {
-      // This endpoint would typically require admin authentication
+      // This endpoint is now properly secured with adminAuth middleware
+      // Only users with role: 'admin' can access this sensitive data
       const analytics = await userService.getUserAnalytics();
       
       res.status(200).json({
         success: true,
         message: 'Analytics retrieved successfully',
-        data: analytics
+        data: analytics,
+        accessedBy: req.user.email // Log which admin accessed the data
       });
     } catch (error) {
       res.status(400).json({

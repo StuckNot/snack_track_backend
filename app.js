@@ -87,6 +87,35 @@ app.use('/api', apiRoutes);
 
 /**
  * 📄 ROOT ENDPOINT
+ * @swagger
+ * /:
+ *   get:
+ *     summary: API Welcome Message
+ *     description: Returns welcome message and API information
+ *     tags: [General]
+ *     responses:
+ *       200:
+ *         description: Welcome message
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Welcome to SnackTrack API! 🥗"
+ *                 version:
+ *                   type: string
+ *                   example: "1.0.0"
+ *                 documentation:
+ *                   type: string
+ *                   example: "/api-docs"
+ *                 health:
+ *                   type: string
+ *                   example: "/api/health"
  */
 app.get('/', (req, res) => {
   res.json({
