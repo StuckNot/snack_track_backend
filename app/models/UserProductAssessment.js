@@ -57,8 +57,8 @@ module.exports = (sequelize, DataTypes) => {
     });
   };
 
+  // ✅ Attach constants directly to the model for better accessibility
+  UserProductAssessment.ASSESSMENT_TYPES = ASSESSMENT_TYPES;
+
   return UserProductAssessment;
 };
-
-// Export constants so they can be reused elsewhere if needed
-module.exports.ASSESSMENT_TYPES = ASSESSMENT_TYPES;
