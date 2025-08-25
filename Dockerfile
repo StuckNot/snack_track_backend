@@ -1,37 +1,34 @@
-# Stage 1: Build dependencies
-FROM node:18-alpine AS builder
+# Stage 1: Build
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Copy package.json and package-lock.json first (for caching)
 COPY package*.json ./
+RUN npm install --only=production
 
-# Install dependencies
-RUN npm install --production
-
-# Copy all source code
 COPY . .
 
-# Stage 2: Run the app
+# Stage 2: Run
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy only what’s needed from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/app.js ./app.js
-COPY --from=builder /app/server.js ./server.js
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/routes ./routes
-COPY --from=builder /app/controllers ./controllers
-COPY --from=builder /app/models ./models
-COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/seeders ./seeders
-COPY --from=builder /app/uploads ./uploads
+# Copy only built files and node_modules from build stage
+COPY --from=build /app /app
 
-# Render will provide PORT env variable
+# Set NODE_ENV to production
+ENV NODE_ENV=production
+
+# Add non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+# Expose the port your app runs on
 EXPOSE 10000
 
-# Start the server
-CMD ["node", "server.js"]
+# Add healthcheck (optional, if your app has /health endpoint)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:10000/health', res => process.exit(res.statusCode === 200 ? 0 : 1))"
+
+# Start the app
+CMD ["npm", "start"]
