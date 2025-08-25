@@ -37,11 +37,13 @@ const adminAuth = async (req, res, next) => {
       });
     }
 
-    // Check if user has admin role
+    // 🚨 CRITICAL: Check if user has admin role
     if (user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. Admin privileges required.'
+        message: 'Access denied. Admin privileges required.',
+        requiredRole: 'admin',
+        userRole: user.role
       });
     }
 
@@ -49,7 +51,8 @@ const adminAuth = async (req, res, next) => {
     req.user = {
       userId: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      name: user.name
     };
     
     next();
@@ -68,6 +71,7 @@ const adminAuth = async (req, res, next) => {
       });
     }
 
+    console.error('❌ Admin Auth Error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error during authentication.'

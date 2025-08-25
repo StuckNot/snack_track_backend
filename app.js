@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const { specs, swaggerUi, swaggerOptions } = require('./config/swagger');
 require('dotenv').config();
 
 const app = express();
@@ -51,6 +52,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 /**
+ * 📚 API DOCUMENTATION
+ */
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerOptions));
+
+/**
  * 🚀 API ROUTES
  */
 const apiRoutes = require('./routes');
@@ -58,13 +64,42 @@ app.use('/api', apiRoutes);
 
 /**
  * 📄 ROOT ENDPOINT
+ * @swagger
+ * /:
+ *   get:
+ *     summary: API Welcome Message
+ *     description: Returns welcome message and API information
+ *     tags: [General]
+ *     responses:
+ *       200:
+ *         description: Welcome message
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Welcome to SnackTrack API! 🥗"
+ *                 version:
+ *                   type: string
+ *                   example: "1.0.0"
+ *                 documentation:
+ *                   type: string
+ *                   example: "/api-docs"
+ *                 health:
+ *                   type: string
+ *                   example: "/api/health"
  */
 app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'Welcome to SnackTrack API! 🥗',
     version: '1.0.0',
-    documentation: '/api',
+    documentation: '/api-docs',
     health: '/api/health'
   });
 });
