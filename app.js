@@ -5,6 +5,10 @@ const morgan = require('morgan');
 const compression = require('compression');
 require('dotenv').config();
 
+// 📄 Swagger imports
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
 const app = express();
 
 /**
@@ -51,6 +55,31 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 /**
+ * 📖 SWAGGER DOCUMENTATION
+ */
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'SnackTrack API',
+      version: '1.0.0',
+      description: 'API documentation for SnackTrack backend',
+    },
+    servers: [
+      {
+        url: process.env.NODE_ENV === 'production'
+          ? 'https://snack-track-backend.onrender.com'
+          : 'http://localhost:5000',
+      },
+    ],
+  },
+  apis: ['./routes/*.js'], // <-- yaha tum apne route files ka path daal sakte ho
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/**
  * 🚀 API ROUTES
  */
 const apiRoutes = require('./routes');
@@ -64,7 +93,7 @@ app.get('/', (req, res) => {
     success: true,
     message: 'Welcome to SnackTrack API! 🥗',
     version: '1.0.0',
-    documentation: '/api',
+    documentation: '/api-docs',
     health: '/api/health'
   });
 });
@@ -81,7 +110,8 @@ app.use('*', (req, res) => {
     availableRoutes: {
       api: '/api',
       health: '/api/health',
-      users: '/api/users'
+      users: '/api/users',
+      docs: '/api-docs'
     }
   });
 });
@@ -90,7 +120,6 @@ app.use('*', (req, res) => {
 app.use((error, req, res, next) => {
   console.error('❌ Error:', error);
 
-  // Multer file upload errors
   if (error.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
       success: false,
@@ -105,7 +134,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Validation errors
   if (error.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -114,7 +142,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Sequelize validation errors
   if (error.name === 'SequelizeValidationError') {
     return res.status(400).json({
       success: false,
@@ -123,7 +150,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Sequelize unique constraint errors
   if (error.name === 'SequelizeUniqueConstraintError') {
     return res.status(409).json({
       success: false,
@@ -132,7 +158,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Sequelize foreign key constraint errors
   if (error.name === 'SequelizeForeignKeyConstraintError') {
     return res.status(400).json({
       success: false,
@@ -141,7 +166,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Sequelize database connection errors
   if (error.name === 'SequelizeConnectionError') {
     return res.status(503).json({
       success: false,
@@ -150,7 +174,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Default error
   res.status(error.status || 500).json({
     success: false,
     message: error.message || 'Internal server error',
