@@ -67,13 +67,13 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production'
-          ? 'https://snack-track-backend.onrender.com'
-          : 'http://localhost:5000',
+        // Use an environment variable for the server URL
+        url: process.env.API_URL || 'http://localhost:5000',
       },
     ],
   },
-  apis: ['./routes/*.js'], // <-- yaha tum apne route files ka path daal sakte ho
+  // Path to the API route files
+  apis: ['./routes/*.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
