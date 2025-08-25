@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: snacktrack-backend
+    env: docker
+    plan: free # Change this to "starter" or "pro" for more resources
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false # Set this in the Render dashboard for security
+      - key: JWT_SECRET
+        sync: false # If you are using JWTs
+      - key: CORS_ORIGIN
+        sync: false # Your frontend's URL
