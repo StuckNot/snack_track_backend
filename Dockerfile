@@ -1,34 +1,24 @@
-# Stage 1: Build
-FROM node:18-alpine AS build
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install --only=production
-
-COPY . .
-
-# Stage 2: Run
+# Use official Node.js LTS image
 FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Copy only built files and node_modules from build stage
-COPY --from=build /app /app
+# Copy package files first (for better caching)
+COPY package*.json ./
 
-# Set NODE_ENV to production
-ENV NODE_ENV=production
+# Install dependencies
+RUN npm install --production
 
-# Add non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
+# Copy rest of the project files
+COPY . .
 
-# Expose the port your app runs on
+# Expose the port Render expects (10000)
 EXPOSE 10000
 
-# Add healthcheck (optional, if your app has /health endpoint)
+# Add a simple healthcheck (Render will check if service is alive)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:10000/health', res => process.exit(res.statusCode === 200 ? 0 : 1))"
+  CMD wget --quiet --tries=1 --spider http://localhost:10000/api/health || exit 1
 
 # Start the app
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
