@@ -13,10 +13,14 @@ RUN npm install --production
 # Copy rest of the project files
 COPY . .
 
+# Add non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 # Expose the port Render expects (10000)
 EXPOSE 10000
 
-# Add a simple healthcheck (Render will check if service is alive)
+# Healthcheck (optional but recommended)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:10000/api/health || exit 1
 
