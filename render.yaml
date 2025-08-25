@@ -1,17 +1,28 @@
+databases:
+  - name: snacktrack-db
+    databaseName: snacktrack_db
+    user: snacktrack_user
+    plan: free # Change this to a paid plan for a production environment
+
 services:
   - type: web
     name: snacktrack-backend
     env: docker
     plan: free # Change this to "starter" or "pro" for more resources
     dockerfilePath: ./Dockerfile
+    region: oregon # Aap apne user base ke hisaab se region badal sakte hain
+    healthCheck:
+      path: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        sync: false # Set this in the Render dashboard for security
+        fromDatabase:
+          name: snacktrack-db
+          property: connectionString
       - key: JWT_SECRET
-        sync: false # If you are using JWTs
+        sync: false
       - key: CORS_ORIGIN
-        sync: false # Your frontend's URL
+        sync: false
