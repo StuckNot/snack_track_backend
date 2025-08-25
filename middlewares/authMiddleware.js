@@ -116,29 +116,75 @@ const optionalAuth = async (req, res, next) => {
  */
 const authenticateAdmin = async (req, res, next) => {
   try {
-    // First authenticate the token
-    await new Promise((resolve, reject) => {
-      authenticateToken(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    // Extract token from Authorization header
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    // Check if user has admin role
-    if (req.user.role !== 'admin') {
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. No token provided.'
+      });
+    }
+
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Find user by ID from token
+    const user = await User.findByPk(decoded.userId);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token. User not found.'
+      });
+    }
+
+    // Check if user is active
+    if (!user.is_active) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account has been deactivated.'
+      });
+    }
+
+    // 🚨 CRITICAL: Check if user has admin role
+    if (user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Admin privileges required.',
         requiredRole: 'admin',
-        userRole: req.user.role
+        userRole: user.role
       });
     }
 
+    // Add user info to request object
+    req.user = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name
+    };
+
     next();
   } catch (error) {
-    return res.status(401).json({
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. Invalid token.'
+      });
+    }
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. Token expired.'
+      });
+    }
+
+    return res.status(500).json({
       success: false,
-      message: 'Authentication failed.'
+      message: 'Authentication error.'
     });
   }
 };

@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const DOMPurify = require('isomorphic-dompurify');
 
 /**
  * 🔍 VALIDATION MIDDLEWARE
@@ -78,18 +79,24 @@ const customValidations = {
 };
 
 /**
- * Sanitize input data
+ * Enhanced XSS Protection - Sanitize input data
  */
 const sanitizeInput = (req, res, next) => {
-  // Remove any potential XSS from string inputs
   if (req.body) {
     for (const key in req.body) {
       if (typeof req.body[key] === 'string') {
-        // Basic XSS prevention
-        req.body[key] = req.body[key]
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-          .replace(/<[^>]*>?/gm, '')
-          .trim();
+        // Use DOMPurify for comprehensive XSS protection
+        req.body[key] = DOMPurify.sanitize(req.body[key], {
+          ALLOWED_TAGS: [], // Strip all HTML tags
+          ALLOWED_ATTR: [] // Strip all attributes
+        }).trim();
+      } else if (Array.isArray(req.body[key])) {
+        // Sanitize array elements if they are strings
+        req.body[key] = req.body[key].map(item => 
+          typeof item === 'string' 
+            ? DOMPurify.sanitize(item, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim()
+            : item
+        );
       }
     }
   }
@@ -97,37 +104,85 @@ const sanitizeInput = (req, res, next) => {
 };
 
 /**
- * Rate limiting validation
+ * Scalable Rate Limiting using Redis (for production)
+ * Falls back to in-memory for development
  */
+let redisClient = null;
+
+// Try to initialize Redis client
+try {
+  const redis = require('redis');
+  if (process.env.REDIS_URL || process.env.NODE_ENV === 'production') {
+    redisClient = redis.createClient({
+      url: process.env.REDIS_URL || 'redis://localhost:6379'
+    });
+    redisClient.on('error', (err) => {
+      console.warn('⚠️ Redis connection failed, falling back to in-memory rate limiting:', err.message);
+      redisClient = null;
+    });
+  }
+} catch (error) {
+  console.warn('⚠️ Redis not available, using in-memory rate limiting');
+}
+
 const checkRateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
-  const requests = new Map();
+  // In-memory fallback for development
+  const memoryStore = new Map();
   
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const clientId = req.ip || req.connection.remoteAddress;
     const now = Date.now();
-    
-    if (!requests.has(clientId)) {
-      requests.set(clientId, { count: 1, resetTime: now + windowMs });
-      return next();
+    const windowStart = now - windowMs;
+
+    try {
+      if (redisClient && redisClient.isReady) {
+        // Use Redis for scalable rate limiting
+        const key = `rate_limit:${clientId}`;
+        const current = await redisClient.incr(key);
+        
+        if (current === 1) {
+          await redisClient.expire(key, Math.ceil(windowMs / 1000));
+        }
+        
+        if (current > maxRequests) {
+          const ttl = await redisClient.ttl(key);
+          return res.status(429).json({
+            success: false,
+            message: 'Too many requests. Please try again later.',
+            retryAfter: ttl
+          });
+        }
+      } else {
+        // Fallback to in-memory rate limiting
+        if (!memoryStore.has(clientId)) {
+          memoryStore.set(clientId, { count: 1, resetTime: now + windowMs });
+          return next();
+        }
+        
+        const clientData = memoryStore.get(clientId);
+        
+        if (now > clientData.resetTime) {
+          memoryStore.set(clientId, { count: 1, resetTime: now + windowMs });
+          return next();
+        }
+        
+        if (clientData.count >= maxRequests) {
+          return res.status(429).json({
+            success: false,
+            message: 'Too many requests. Please try again later.',
+            retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
+          });
+        }
+        
+        clientData.count++;
+      }
+      
+      next();
+    } catch (error) {
+      // If rate limiting fails, log error but don't block request
+      console.error('Rate limiting error:', error);
+      next();
     }
-    
-    const clientData = requests.get(clientId);
-    
-    if (now > clientData.resetTime) {
-      requests.set(clientId, { count: 1, resetTime: now + windowMs });
-      return next();
-    }
-    
-    if (clientData.count >= maxRequests) {
-      return res.status(429).json({
-        success: false,
-        message: 'Too many requests. Please try again later.',
-        retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
-      });
-    }
-    
-    clientData.count++;
-    next();
   };
 };
 
