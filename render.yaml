@@ -2,17 +2,15 @@ databases:
   - name: snacktrack-db
     databaseName: snacktrack_db
     user: snacktrack_user
-    plan: free # Change this to a paid plan for a production environment
+    plan: free # Change this to paid in production
 
 services:
   - type: web
-    name: snacktrack-backend
+    name: snack-track-backend
     env: docker
-    plan: free # Change this to "starter" or "pro" for more resources
-    dockerfilePath: ./Dockerfile
-    region: oregon # Aap apne user base ke hisaab se region badal sakte hain
-    healthCheck:
-      path: /api/health
+    plan: free
+    branch: deploy
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -23,6 +21,11 @@ services:
           name: snacktrack-db
           property: connectionString
       - key: JWT_SECRET
-        sync: false
+        generateValue: true
       - key: CORS_ORIGIN
         sync: false
+      - key: API_URL
+        fromService:
+          type: web
+          name: snack-track-backend
+          property: url
