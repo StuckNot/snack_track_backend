@@ -13,8 +13,19 @@ RUN npm install --production
 # Copy rest of the application
 COPY . .
 
+# Add non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 # Expose app port
 EXPOSE 5000
 
-# Run the server
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Healthcheck (Render uses this for lifecycle management)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:5000/api/health || exit 1
+
+# Start the server
 CMD ["npm", "start"]
