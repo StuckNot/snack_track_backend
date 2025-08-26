@@ -1,26 +1,9 @@
-# Git files
-.git
-.gitignore
-
-# Docker files
-.dockerignore
-Dockerfile
-
-# Node.js
 node_modules
 npm-debug.log
-*.log
-
-# Environment
+Dockerfile
+docker-compose.yml
+.git
+.gitignore
 .env
-.env.example
-
-# Documentation
-README.md
-
-# Tests & Coverage
-tests/
-coverage/
-
-# Tooling
-nodemon.json
+coverage
+tests
