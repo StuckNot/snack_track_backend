@@ -4,26 +4,26 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files first (better layer caching)
 COPY package*.json ./
 
 # Install dependencies (production only)
 RUN npm install --production
 
-# Copy rest of the application
+# Copy rest of the application code
 COPY . .
 
-# Add non-root user for security
+# Install curl for healthcheck (must run as root)
+RUN apk add --no-cache curl
+
+# Create and use a non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
-# Expose app port
+# Expose application port
 EXPOSE 5000
 
-# Install curl for healthcheck
-RUN apk add --no-cache curl
-
-# Healthcheck (Render uses this for lifecycle management)
+# Healthcheck (Render uses this to auto-restart if unhealthy)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:5000/api/health || exit 1
 
