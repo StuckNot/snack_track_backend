@@ -1,31 +1,14 @@
-databases:
-  - name: snacktrack-db
-    databaseName: snacktrack_db
-    user: snacktrack_user
-    plan: free # Change this to paid in production
-
 services:
   - type: web
-    name: snack-track-backend
+    name: snacktrack-backend
     env: docker
     plan: free
-    branch: deploy
+    region: oregon
+    dockerfilePath: ./Dockerfile
     autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
-      - key: DATABASE_URL
-        fromDatabase:
-          name: snacktrack-db
-          property: connectionString
-      - key: JWT_SECRET
-        generateValue: true
-      - key: CORS_ORIGIN
-        sync: false
-      - key: API_URL
-        fromService:
-          type: web
-          name: snack-track-backend
-          property: url
+        value: 5000
+      
