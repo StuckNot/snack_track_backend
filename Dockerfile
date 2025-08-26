@@ -1,28 +1,20 @@
-# Use official Node.js LTS image
+# Use official Node.js 18 Alpine image
 FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files first (for better caching)
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies (production only)
 RUN npm install --production
 
-# Copy rest of the project files
+# Copy rest of the application
 COPY . .
 
-# Add non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
+# Expose app port
+EXPOSE 5000
 
-# Expose the port Render expects (10000)
-EXPOSE 10000
-
-# Healthcheck (optional but recommended)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:10000/api/health || exit 1
-
-# Start the app
-CMD ["node", "server.js"]
+# Run the server
+CMD ["npm", "start"]
