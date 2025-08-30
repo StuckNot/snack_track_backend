@@ -5,9 +5,10 @@ const { User } = require('../models'); // Add User model import
 class UserController {
   /**
    * 🔐 AUTHENTICATION ENDPOINTS
-   */
+   */ 
   async register(req, res) {
     try {
+      console.log("User Controller - register method");
       // Check for validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
