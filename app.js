@@ -5,15 +5,13 @@ const morgan = require('morgan');
 const compression = require('compression');
 require('dotenv').config();
 
-// 📄 Swagger imports
+//Swagger imports
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 const app = express();
 
-/**
- * 🛡️ SECURITY MIDDLEWARE
- */
+//SECURITY MIDDLEWARE
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -25,9 +23,7 @@ app.use(helmet({
   },
 }));
 
-/**
- * 🌐 CORS CONFIGURATION
- */
+//CORS CONFIGURATION
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [])
@@ -37,26 +33,18 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-/**
- * 📊 LOGGING & COMPRESSION
- */
+//LOGGING & COMPRESSION
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(compression());
 
-/**
- * 📥 BODY PARSING MIDDLEWARE
- */
+//BODY PARSING MIDDLEWARE
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-/**
- * 📁 STATIC FILE SERVING
- */
+//STATIC FILE SERVING
 app.use('/uploads', express.static('uploads'));
 
-/**
- * 📖 SWAGGER DOCUMENTATION
- */
+//SWAGGER DOCUMENTATION
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -79,14 +67,11 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-/**
- * 🚀 API ROUTES
- */
+//API ROUTES
 const apiRoutes = require('./routes');
 app.use('/api', apiRoutes);
 
 /**
- * 📄 ROOT ENDPOINT
  * @swagger
  * /:
  *   get:
@@ -127,11 +112,8 @@ app.get('/', (req, res) => {
   });
 });
 
-/**
- * ❌ ERROR HANDLING MIDDLEWARE
- */
+//ERROR HANDLING MIDDLEWARE
 
-// 404 Handler
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,

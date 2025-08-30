@@ -9,23 +9,26 @@ class UserService {
   async register(userData) {
     try {
       // Check if user already exists
+      console.log("0");
       const existingUser = await User.findByEmail(userData.email);
+      console.log("1");
       if (existingUser) {
         throw new Error('User already exists with this email');
       }
-
+        console.log("2");
       // Create new user (password will be hashed in beforeCreate hook)
       const user = await User.create(userData);
       
       // Generate JWT token
       const token = this.generateToken(user.id);
-      
+      console.log("3");
       return {
         user: user.toSafeObject(),
         token
       };
     } catch (error) {
       throw new Error(`Registration failed: ${error.message}`);
+      console.log("4");
     }
   }
 
