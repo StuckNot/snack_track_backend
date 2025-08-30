@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 module.exports = (sequelize) => {
   class Product extends Model {
     /**
-     * 🔗 ASSOCIATIONS
+     * ASSOCIATIONS
      */
     static associate(models) {
       // Product has one nutrition profile
@@ -48,7 +48,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 🎯 HEALTH ASSESSMENT METHODS
+     * HEALTH ASSESSMENT METHODS
      */
     calculateHealthScore() {
       if (!this.nutrition) return null;
@@ -85,7 +85,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 🏷️ CATEGORIZATION METHODS
+     * CATEGORIZATION METHODS
      */
     getHealthCategory() {
       const score = this.calculateHealthScore();
@@ -96,7 +96,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 📊 DATA FORMATTING METHODS
+     * DATA FORMATTING METHODS
      */
     toPublicObject() {
       const { createdAt, updatedAt, ...publicProduct } = this.toJSON();
@@ -114,7 +114,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 🔍 STATIC SEARCH METHODS
+     * STATIC SEARCH METHODS
      */
     static async findByBarcode(barcode) {
       return await this.findOne({

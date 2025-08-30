@@ -8,9 +8,15 @@ class UserController {
    */
   async register(req, res) {
     try {
+      // 🐛 Debug logging for troubleshooting
+      console.log('📝 Registration request received:');
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+      console.log('Content-Type:', req.headers['content-type']);
+      
       // Check for validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log('❌ Validation errors:', errors.array());
         return res.status(400).json({
           success: false,
           message: 'Validation failed',
@@ -20,12 +26,15 @@ class UserController {
 
       const result = await userService.register(req.body);
       
+      console.log('✅ User registered successfully:', result.user.email);
+      
       res.status(201).json({
         success: true,
         message: 'User registered successfully',
         data: result
       });
     } catch (error) {
+      console.error('❌ Registration error:', error.message);
       res.status(400).json({
         success: false,
         message: error.message
@@ -339,6 +348,94 @@ class UserController {
       });
     } catch (error) {
       res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * 📧 Email verification endpoint
+   */
+  async verifyEmail(req, res) {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Verification token is required'
+        });
+      }
+
+      // Find user with this verification token
+      const user = await User.findOne({
+        where: { 
+          email_verification_token: token,
+          email_verified: false 
+        }
+      });
+
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired verification token'
+        });
+      }
+
+      // Mark email as verified and clear token
+      await user.update({
+        email_verified: true,
+        email_verification_token: null
+      });
+
+      // Send welcome email
+      const emailService = require('../services/emailService');
+      await emailService.sendWelcomeEmail(user);
+
+      res.status(200).json({
+        success: true,
+        message: 'Email verified successfully! Welcome to SnackTrack!'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * 📧 Resend verification email
+   */
+  async resendVerification(req, res) {
+    try {
+      const { email } = req.body;
+      
+      const user = await User.findByEmail(email);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      if (user.email_verified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is already verified'
+        });
+      }
+
+      // Send new verification email
+      await user.sendEmailVerification();
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification email sent successfully'
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
         message: error.message
       });

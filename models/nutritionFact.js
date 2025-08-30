@@ -4,7 +4,7 @@ const { Model, DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   class NutritionFact extends Model {
     /**
-     * 🔗 ASSOCIATIONS
+     * ASSOCIATIONS
      */
     static associate(models) {
       // NutritionFact belongs to a product
@@ -15,7 +15,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 📊 NUTRITION ANALYSIS METHODS
+     * NUTRITION ANALYSIS METHODS
      */
     calculateHealthScore() {
       let score = 50; // Base score
@@ -56,7 +56,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 🏷️ CATEGORIZATION METHODS
+     * CATEGORIZATION METHODS
      */
     isKeto() {
       const netCarbs = (this.carbs || 0) - (this.fiber || 0);
@@ -76,7 +76,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 📊 COMPARISON METHODS
+     * COMPARISON METHODS
      */
     compareWith(otherNutrition) {
       return {
@@ -90,7 +90,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 📊 DATA FORMATTING METHODS
+     * DATA FORMATTING METHODS
      */
     toSummary() {
       return {

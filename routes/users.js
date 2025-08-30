@@ -4,9 +4,18 @@ const userController = require('../controllers/userController');
 const { body } = require('express-validator');
 
 // Import middleware
-const { auth } = require('../middlewares/auth');
-const { adminAuth } = require('../middlewares/adminAuth');
+const { authenticateToken: auth } = require('../middlewares/authMiddleware');
+const { authenticateAdmin: adminAuth } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/upload');
+const { validateRequest } = require('../middlewares/validationMiddleware');
+
+// Import validators
+const { 
+  validateUserRegistration, 
+  validateUserLogin, 
+  validateProfileUpdate,
+  validatePasswordChange 
+} = require('../utils/validators/userValidators');
 
 /**
  * 🔐 AUTHENTICATION ROUTES
@@ -111,55 +120,7 @@ const upload = require('../middlewares/upload');
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/register', [
-  body('name')
-    .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s'-]+$/)
-    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
-  body('age')
-    .optional()
-    .isInt({ min: 13, max: 120 })
-    .withMessage('Age must be between 13 and 120'),
-  body('height')
-    .optional()
-    .isFloat({ min: 50, max: 300 })
-    .withMessage('Height must be between 50 and 300 cm'),
-  body('weight')
-    .optional()
-    .isFloat({ min: 20, max: 500 })
-    .withMessage('Weight must be between 20 and 500 kg'),
-  body('gender')
-    .optional()
-    .isIn(['Male', 'Female', 'Other'])
-    .withMessage('Gender must be Male, Female, or Other'),
-  body('dietary_preferences')
-    .optional()
-    .isIn(['veg', 'vegan', 'keto', 'paleo', 'gluten_free', 'dairy_free', 'none'])
-    .withMessage('Invalid dietary preference'),
-  body('health_goals')
-    .optional()
-    .isIn(['lose_weight', 'gain_muscle', 'maintain', 'improve_health'])
-    .withMessage('Invalid health goal'),
-  body('activity_level')
-    .optional()
-    .isIn(['sedentary', 'light', 'moderate', 'active', 'very_active'])
-    .withMessage('Invalid activity level'),
-  body('allergies')
-    .optional()
-    .isArray()
-    .withMessage('Allergies must be an array')
-], userController.register);
+router.post('/register', validateUserRegistration, userController.register);
 
 /**
  * @swagger
@@ -216,15 +177,83 @@ router.post('/register', [
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', [
+router.post('/login', validateUserLogin, userController.login);
+
+/**
+ * 📧 EMAIL VERIFICATION ROUTES
+ */
+
+/**
+ * @swagger
+ * /api/users/verify-email:
+ *   get:
+ *     summary: Verify email address
+ *     description: Verify user's email address using the token sent via email
+ *     tags: [Authentication]
+ *     parameters:
+ *       - name: token
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Email verification token
+ *         example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/verify-email', userController.verifyEmail);
+
+/**
+ * @swagger
+ * /api/users/resend-verification:
+ *   post:
+ *     summary: Resend verification email
+ *     description: Resend email verification link to user's email address
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Email already verified or user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/resend-verification', [
   body('email')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('password')
-    .notEmpty()
-    .withMessage('Password is required')
-], userController.login);
+    .withMessage('Please provide a valid email')
+], userController.resendVerification);
 
 /**
  * 👤 PROFILE MANAGEMENT ROUTES (Protected)
@@ -353,49 +382,7 @@ router.get('/profile', auth, userController.getProfile);
  */
 router.put('/profile', [
   auth,
-  body('name')
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s'-]+$/)
-    .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
-  body('age')
-    .optional()
-    .isInt({ min: 13, max: 120 })
-    .withMessage('Age must be between 13 and 120'),
-  body('height')
-    .optional()
-    .isFloat({ min: 50, max: 300 })
-    .withMessage('Height must be between 50 and 300 cm'),
-  body('weight')
-    .optional()
-    .isFloat({ min: 20, max: 500 })
-    .withMessage('Weight must be between 20 and 500 kg'),
-  body('gender')
-    .optional()
-    .isIn(['Male', 'Female', 'Other'])
-    .withMessage('Gender must be Male, Female, or Other'),
-  body('dietary_preferences')
-    .optional()
-    .isIn(['veg', 'vegan', 'keto', 'paleo', 'gluten_free', 'dairy_free', 'none'])
-    .withMessage('Invalid dietary preference'),
-  body('health_goals')
-    .optional()
-    .isIn(['lose_weight', 'gain_muscle', 'maintain', 'improve_health'])
-    .withMessage('Invalid health goal'),
-  body('activity_level')
-    .optional()
-    .isIn(['sedentary', 'light', 'moderate', 'active', 'very_active'])
-    .withMessage('Invalid activity level'),
-  body('allergies')
-    .optional()
-    .isArray()
-    .withMessage('Allergies must be an array'),
-  body('phone')
-    .optional()
-    .isMobilePhone()
-    .withMessage('Please provide a valid phone number')
+  validateProfileUpdate
 ], userController.updateProfile);
 
 /**
@@ -447,14 +434,7 @@ router.put('/profile', [
  */
 router.put('/change-password', [
   auth,
-  body('currentPassword')
-    .notEmpty()
-    .withMessage('Current password is required'),
-  body('newPassword')
-    .isLength({ min: 8 })
-    .withMessage('New password must be at least 8 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$/)
-    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+  validatePasswordChange
 ], userController.changePassword);
 
 /**

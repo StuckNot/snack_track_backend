@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     /**
-     * 🔗 ASSOCIATIONS - Define relationships with other models
+     * ASSOCIATIONS - Define relationships with other models
      */
     static associate(models) {
       // User has many product assessments
@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 🔐 PASSWORD MANAGEMENT METHODS
+     * PASSWORD MANAGEMENT METHODS
      */
     async validatePassword(password) {
       return bcrypt.compare(password, this.password);
@@ -63,7 +63,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 📊 HEALTH CALCULATION METHODS
+     * HEALTH CALCULATION METHODS
      */
     calculateBMI() {
       if (this.height && this.weight) {
@@ -124,7 +124,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 📅 AGE CALCULATION METHOD
+     * AGE CALCULATION METHOD
      */
     calculateAge() {
       if (!this.date_of_birth) return this.age;
@@ -142,7 +142,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 🥗 ALLERGY & DIETARY METHODS
+     * ALLERGY & DIETARY METHODS
      */
     hasAllergy(ingredient) {
       if (!this.allergies || this.allergies.length === 0) return false;
@@ -186,7 +186,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 🏥 HEALTH CONDITIONS METHODS
+     * HEALTH CONDITIONS METHODS
      */
     hasHealthCondition(condition) {
       if (!this.health_conditions || this.health_conditions.length === 0) return false;
@@ -230,7 +230,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 🔒 DATA PRIVACY & SAFETY METHODS
+     * DATA PRIVACY & SAFETY METHODS
      */
     toSafeObject() {
       const { password, ...safeUser } = this.toJSON();
@@ -271,7 +271,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 🔐 SECURITY METHODS
+     * SECURITY METHODS
      */
     isAccountLocked() {
       return this.account_locked_until && new Date() < this.account_locked_until;
@@ -307,7 +307,25 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 📊 ENHANCED HEALTH METHODS
+     * 📧 Send email verification (new method)
+     */
+    async sendEmailVerification() {
+      const emailService = require('../services/emailService');
+      const token = this.generateEmailVerificationToken();
+      
+      try {
+        await emailService.sendEmailVerification(this, token);
+        console.log(`📧 Verification email sent to ${this.email}`);
+        return token;
+      } catch (error) {
+        console.error('❌ Failed to send verification email:', error);
+        // Don't throw error - user registration should still succeed
+        return token;
+      }
+    }
+
+    /**
+     * ENHANCED HEALTH METHODS
      */
     getEffectiveDailyCalories() {
       return this.daily_calorie_goal || this.calculateDailyCalories();
@@ -328,7 +346,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 🌐 LOCALIZATION METHODS
+     * LOCALIZATION METHODS
      */
     getLocalizedHealthProfile() {
       const profile = this.toHealthProfile();
@@ -346,7 +364,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * 🔍 STATIC QUERY METHODS
+     * STATIC QUERY METHODS
      */
     static async findByEmail(email) {
       return await this.findOne({
@@ -408,7 +426,7 @@ module.exports = (sequelize, DataTypes) => {
   }
 
   /**
-   * 📋 MODEL DEFINITION - Database Schema
+   * MODEL DEFINITION - Database Schema
    */
   User.init({
     // Identity Fields
@@ -619,7 +637,7 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'users',
     
     /**
-     * 🪝 MODEL HOOKS - Automatic Processing
+     * MODEL HOOKS - Automatic Processing
      */
     hooks: {
       beforeCreate: async (user) => {
@@ -725,7 +743,7 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       afterCreate: async (user) => {
-        console.log(`✅ New user registered: ${user.email}`);
+        console.log(`New user registered: ${user.email}`);
         // Here you could:
         // - Send welcome email
         // - Create user preferences record

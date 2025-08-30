@@ -4,7 +4,7 @@ const { Model, DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   class Category extends Model {
     /**
-     * 🔗 ASSOCIATIONS
+     * ASSOCIATIONS
      */
     static associate(models) {
       // Category has many products
@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 🔍 STATIC METHODS
+     * STATIC METHODS
      */
     static async getMainCategories() {
       return await this.findAll({
@@ -62,7 +62,7 @@ module.exports = (sequelize) => {
     icon: {
       type: DataTypes.STRING(50),
       allowNull: true,
-      comment: 'Icon identifier or emoji'
+      comment: 'Icon identifier'
     },
     is_active: {
       type: DataTypes.BOOLEAN,

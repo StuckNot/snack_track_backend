@@ -17,12 +17,16 @@ class UserService {
       // Create new user (password will be hashed in beforeCreate hook)
       const user = await User.create(userData);
       
+      // 📧 Send verification email (NEW!)
+      await user.sendEmailVerification();
+      
       // Generate JWT token
       const token = this.generateToken(user.id);
       
       return {
         user: user.toSafeObject(),
-        token
+        token,
+        message: 'Registration successful! Please check your email to verify your account.'
       };
     } catch (error) {
       throw new Error(`Registration failed: ${error.message}`);

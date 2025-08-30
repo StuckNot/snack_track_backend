@@ -4,7 +4,7 @@ const { Model, DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   class Ingredient extends Model {
     /**
-     * 🔗 ASSOCIATIONS
+     * ASSOCIATIONS
      */
     static associate(models) {
       // Ingredient belongs to a product
@@ -15,7 +15,7 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 🔍 UTILITY METHODS
+     * UTILITY METHODS
      */
     isCommonAllergen() {
       const commonAllergens = [
@@ -29,11 +29,11 @@ module.exports = (sequelize) => {
     }
 
     /**
-     * 🔍 STATIC METHODS
+     * STATIC METHODS
      */
     static async findByProduct(productId) {
       return await this.findAll({
-        where: { product_id: productId },
+        where: { product_id: Fo },
         order: [['order_index', 'ASC'], ['name', 'ASC']]
       });
     }

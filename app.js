@@ -5,14 +5,13 @@ const morgan = require('morgan');
 const compression = require('compression');
 require('dotenv').config();
 
-// 📄 Swagger imports
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
+// Import Swagger configuration from config file
+const { specs, swaggerUi, swaggerOptions } = require('./config/swagger');
 
 const app = express();
 
 /**
- * 🛡️ SECURITY MIDDLEWARE
+ *  SECURITY MIDDLEWARE
  */
 app.use(helmet({
   contentSecurityPolicy: {
@@ -26,7 +25,7 @@ app.use(helmet({
 }));
 
 /**
- * 🌐 CORS CONFIGURATION
+ *  CORS CONFIGURATION
  */
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
@@ -38,55 +37,35 @@ app.use(cors({
 }));
 
 /**
- * 📊 LOGGING & COMPRESSION
+ *  LOGGING & COMPRESSION
  */
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(compression());
 
 /**
- * 📥 BODY PARSING MIDDLEWARE
+ *  BODY PARSING MIDDLEWARE
  */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 /**
- * 📁 STATIC FILE SERVING
+ *  STATIC FILE SERVING
  */
 app.use('/uploads', express.static('uploads'));
 
 /**
- * 📖 SWAGGER DOCUMENTATION
+ *  SWAGGER DOCUMENTATION
  */
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'SnackTrack API',
-      version: '1.0.0',
-      description: 'API documentation for SnackTrack backend',
-    },
-    servers: [
-      {
-        // Use an environment variable for the server URL
-        url: process.env.API_URL || 'http://localhost:5000',
-      },
-    ],
-  },
-  // Path to the API route files
-  apis: ['./routes/*.js'],
-};
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerOptions));
 
 /**
- * 🚀 API ROUTES
+ * API ROUTES
  */
 const apiRoutes = require('./routes');
 app.use('/api', apiRoutes);
 
 /**
- * 📄 ROOT ENDPOINT
+ * ROOT ENDPOINT
  * @swagger
  * /:
  *   get:
@@ -106,7 +85,7 @@ app.use('/api', apiRoutes);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Welcome to SnackTrack API! 🥗"
+ *                   example: "Welcome to SnackTrack API!"
  *                 version:
  *                   type: string
  *                   example: "1.0.0"
@@ -120,7 +99,7 @@ app.use('/api', apiRoutes);
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to SnackTrack API! 🥗',
+    message: 'Welcome to SnackTrack API!',
     version: '1.0.0',
     documentation: '/api-docs',
     health: '/api/health'
@@ -128,7 +107,7 @@ app.get('/', (req, res) => {
 });
 
 /**
- * ❌ ERROR HANDLING MIDDLEWARE
+ *  ERROR HANDLING MIDDLEWARE
  */
 
 // 404 Handler
@@ -147,7 +126,7 @@ app.use('*', (req, res) => {
 
 // Global Error Handler
 app.use((error, req, res, next) => {
-  console.error('❌ Error:', error);
+  console.error('Error:', error);
 
   if (error.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
