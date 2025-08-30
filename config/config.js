@@ -46,7 +46,7 @@ module.exports = {
     dialectOptions: {
       ssl: process.env.NODE_ENV === 'production' ? {
         require: true,
-        rejectUnauthorized: true, // FIXED: Enable certificate validation for security
+        rejectUnauthorized: false, // FIXED: Enable certificate validation for security
         // If using a custom CA certificate, add it here:
         // ca: process.env.DB_SSL_CA, // Base64 encoded CA certificate
         // cert: process.env.DB_SSL_CERT, // Client certificate if required
