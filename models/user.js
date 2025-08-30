@@ -270,9 +270,7 @@ module.exports = (sequelize, DataTypes) => {
       };
     }
 
-    /**
-     * 🔐 SECURITY METHODS
-     */
+    //SECURITY METHODS
     isAccountLocked() {
       return this.account_locked_until && new Date() < this.account_locked_until;
     }
@@ -327,9 +325,7 @@ module.exports = (sequelize, DataTypes) => {
       return risks;
     }
 
-    /**
-     * 🌐 LOCALIZATION METHODS
-     */
+    //LOCALIZATION METHODS
     getLocalizedHealthProfile() {
       const profile = this.toHealthProfile();
       
@@ -345,14 +341,22 @@ module.exports = (sequelize, DataTypes) => {
       return profile;
     }
 
-    /**
-     * 🔍 STATIC QUERY METHODS
-     */
-    static async findByEmail(email) {
-      return await this.findOne({
-        where: { email: email.toLowerCase().trim() }
-      });
-    }
+    //STATIC QUERY METHODS
+static async findByEmail(email) {
+  console.log("findByEmail called with:", email);
+
+  try {
+    const user = await this.findOne({
+      where: { email: String(email).toLowerCase().trim() }
+    });
+    console.log("findOne result:", user ? user.id : null);
+    return user;
+  } catch (err) {
+    console.error("findOne error:", err.message);
+    console.error(err.stack);
+    throw err; // rethrow so service sees it
+  }
+}
 
     static async findActiveUsers() {
       return await this.findAll({
@@ -473,6 +477,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     BMI: {
       type: DataTypes.FLOAT,
+       field: 'BMI' ,
       comment: 'Body Mass Index - auto calculated'
     },
 
